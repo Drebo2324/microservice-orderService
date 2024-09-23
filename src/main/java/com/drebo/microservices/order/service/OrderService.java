@@ -1,5 +1,6 @@
 package com.drebo.microservices.order.service;
 
+import com.drebo.microservices.order.client.InventoryClient;
 import com.drebo.microservices.order.domain.dto.OrderDto;
 import com.drebo.microservices.order.domain.dto.OrderListDto;
 import com.drebo.microservices.order.domain.entity.Order;
@@ -14,21 +15,27 @@ import java.util.List;
 @Slf4j
 public class OrderService {
 
-    OrderRepository orderRepository;
-    OrderMapper orderMapper;
+    private final OrderRepository orderRepository;
+    private final OrderMapper orderMapper;
+    private final InventoryClient inventoryClient;
 
-    public OrderService(OrderRepository orderRepository, OrderMapper orderMapper ){
+    public OrderService(OrderRepository orderRepository, OrderMapper orderMapper, InventoryClient inventoryClient ){
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
+        this.inventoryClient = inventoryClient;
     }
 
-    public OrderDto placeOrder(OrderDto orderDto){
+    public void placeOrder(OrderDto orderDto) {
 
-        Order order = orderMapper.mapFrom(orderDto);
-        Order savedOrder = orderRepository.save(order);
-        log.info("Order placed");
+        boolean inStock = inventoryClient.inStock(orderDto.getSku(), orderDto.getQuantity());
 
-        return orderMapper.mapTo(savedOrder);
+        if (inStock) {
+            Order order = orderMapper.mapFrom(orderDto);
+            Order savedOrder = orderRepository.save(order);
+            log.info("Order number: {} placed successfully", savedOrder.getOrderNumber());
+        } else {
+            throw new RuntimeException("Product with sku code " + orderDto.getSku() + "not in stock.");
+        }
     }
 
     public OrderListDto getAllOrders(){
@@ -40,5 +47,6 @@ public class OrderService {
 
     public void deleteAllOrders(){
         orderRepository.deleteAll();
+        log.info("All orders deleted.");
     }
 }
