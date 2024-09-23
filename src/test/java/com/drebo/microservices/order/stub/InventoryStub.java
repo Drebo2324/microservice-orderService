@@ -8,8 +8,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 @UtilityClass
 public class InventoryStub {
 
-    public void stubInventoryCall(String skuCode, Integer quantity){
-        stubFor(get(urlEqualTo("/api/inventory?skuCode=" + skuCode + "&quantity=" + quantity))
+    public void stubInventoryCall(String sku, Integer quantity){
+        stubFor(get(urlEqualTo("/api/inventory?sku=" + sku + "&quantity=" + quantity))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
