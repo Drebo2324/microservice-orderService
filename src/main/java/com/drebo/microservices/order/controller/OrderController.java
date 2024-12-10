@@ -3,9 +3,11 @@ package com.drebo.microservices.order.controller;
 import com.drebo.microservices.order.domain.dto.OrderDto;
 import com.drebo.microservices.order.domain.dto.OrderListDto;
 import com.drebo.microservices.order.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/api/order")
 public class OrderController {
@@ -16,11 +18,13 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    //TODO: RETURN RESPONSE ENTITY
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String placeOrder(@RequestBody OrderDto orderDto){
-        orderService.placeOrder(orderDto);
-        return "Order placed successfully";
+    public OrderDto placeOrder(@RequestBody OrderDto orderDto){
+        log.info("Placing Order: {}", orderDto);
+        OrderDto orderResponse = orderService.placeOrder(orderDto);
+        return orderResponse;
     }
 
     @GetMapping

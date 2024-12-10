@@ -1,6 +1,7 @@
 package com.drebo.microservices.order.config;
 
 import com.drebo.microservices.order.client.InventoryClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
@@ -13,6 +14,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.time.Duration;
 
+@Slf4j
 @Configuration
 public class RestClientConfig {
 
@@ -21,18 +23,23 @@ public class RestClientConfig {
 
     @Bean
     public InventoryClient inventoryClient(){
-        RestClient restClient = RestClient.builder()
-                .baseUrl(inventoryServiceUrl)
-                //RestClient internally uses ClientHttpRequestFactory to handle mechanics of http calls
-                //ClientHttpRequestFactory creates instances of ClientHttpRequest -> http request object that RestClient uses to make http calls
-                .requestFactory(getClientRequestFactory())
-                .build();
+        try {
+            RestClient restClient = RestClient.builder()
+                    .baseUrl(inventoryServiceUrl)
+                    //RestClient internally uses ClientHttpRequestFactory to handle mechanics of http calls
+                    //ClientHttpRequestFactory creates instances of ClientHttpRequest -> http request object that RestClient uses to make http calls
+                    .requestFactory(getClientRequestFactory())
+                    .build();
 
-        var restClientAdapter = RestClientAdapter.create(restClient);
-        var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
-        //creates proxy instance for InventoryClient
-        //proxy translates method calls using http requests via RestClient
-        return httpServiceProxyFactory.createClient(InventoryClient.class);
+            var restClientAdapter = RestClientAdapter.create(restClient);
+            var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+            //creates proxy instance for InventoryClient
+            //proxy translates method calls using http requests via RestClient
+            return httpServiceProxyFactory.createClient(InventoryClient.class);
+        } catch (Exception e) {
+            log.error("Error creating inventoryClient: {}", e.getMessage());
+            throw e;
+        }
 
     }
 
@@ -40,8 +47,8 @@ public class RestClientConfig {
         //settings for ClientHttpRequest used by the RestClient
         //set timeout
         ClientHttpRequestFactorySettings clientHttpRequestFactorySettings = ClientHttpRequestFactorySettings.DEFAULTS
-                .withConnectTimeout(Duration.ofSeconds(3))
-                .withReadTimeout(Duration.ofSeconds(3));
+                .withConnectTimeout(Duration.ofSeconds(5))
+                .withReadTimeout(Duration.ofSeconds(5));
         return ClientHttpRequestFactories.get(clientHttpRequestFactorySettings);
     }
 }

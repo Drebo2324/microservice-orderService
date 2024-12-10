@@ -10,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -25,16 +29,23 @@ public class OrderService {
         this.inventoryClient = inventoryClient;
     }
 
-    public void placeOrder(OrderDto orderDto) {
+    public OrderDto placeOrder(OrderDto orderDto) {
 
-        boolean inStock = inventoryClient.inStock(orderDto.getSku(), orderDto.getQuantity());
+        Order order = orderMapper.mapFrom(orderDto);
 
-        if (inStock) {
-            Order order = orderMapper.mapFrom(orderDto);
+        //call inventory service
+        var inStock = inventoryClient.inStock(order.getSku(), order.getQuantity());
+        log.info("Inventory check result for SKU {}: {}", order.getSku(), inStock);
+
+        if(inStock){
             Order savedOrder = orderRepository.save(order);
             log.info("Order number: {} placed successfully", savedOrder.getOrderNumber());
+            log.info("Order details: {}", savedOrder);
+            OrderDto orderResponse = orderMapper.mapTo(savedOrder);
+            return orderResponse;
         } else {
-            throw new RuntimeException("Product with sku code " + orderDto.getSku() + "not in stock.");
+            log.warn("Product with SKU code {} is not in stock.", order.getSku());
+            throw new RuntimeException("Product with sku code " + order.getSku() + " not in stock.");
         }
     }
 
