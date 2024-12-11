@@ -10,10 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -32,6 +28,7 @@ public class OrderService {
     public OrderDto placeOrder(OrderDto orderDto) {
 
         Order order = orderMapper.mapFrom(orderDto);
+        log.info("Converted order Dto: {}", order);
 
         //call inventory service
         var inStock = inventoryClient.inStock(order.getSku(), order.getQuantity());

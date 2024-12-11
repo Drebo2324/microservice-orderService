@@ -16,4 +16,5 @@ public class OrderDto {
     private String sku;
     private String price;
     private String quantity;
+    private UserDetails userDetails;
 }

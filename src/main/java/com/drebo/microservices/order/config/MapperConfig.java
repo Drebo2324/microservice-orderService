@@ -16,7 +16,6 @@ public class MapperConfig {
         //convert String price in DTO to/from BigDecimal price in Entity
         modelMapper.typeMap(String.class, BigDecimal.class).setConverter(t -> new BigDecimal(t.getSource()));
         modelMapper.typeMap(BigDecimal.class, String.class).setConverter(t -> t.getSource().toString());
-
         return modelMapper;
     }
 }
