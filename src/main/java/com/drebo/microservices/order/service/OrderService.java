@@ -4,31 +4,34 @@ import com.drebo.microservices.order.client.InventoryClient;
 import com.drebo.microservices.order.domain.dto.OrderDto;
 import com.drebo.microservices.order.domain.dto.OrderListDto;
 import com.drebo.microservices.order.domain.entity.Order;
+import com.drebo.microservices.order.event.OrderNotification;
 import com.drebo.microservices.order.mapper.OrderMapper;
 import com.drebo.microservices.order.repository.OrderRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final InventoryClient inventoryClient;
-
-    public OrderService(OrderRepository orderRepository, OrderMapper orderMapper, InventoryClient inventoryClient ){
-        this.orderRepository = orderRepository;
-        this.orderMapper = orderMapper;
-        this.inventoryClient = inventoryClient;
-    }
+    //KafkaTemplate <k, v> -> <topic name, value sent to topic>
+    private final KafkaTemplate<String, OrderNotification> kafkaTemplate;
 
     public OrderDto placeOrder(OrderDto orderDto) {
-
+        log.info("Received order request: {}", orderDto);
+        log.info("Generating random order number");
         Order order = orderMapper.mapFrom(orderDto);
-        log.info("Converted order Dto: {}", order);
+        order.setOrderNumber(UUID.randomUUID().toString());
+        log.info("Converted order DTO: {}", order);
 
         //call inventory service
         var inStock = inventoryClient.inStock(order.getSku(), order.getQuantity());
@@ -39,7 +42,14 @@ public class OrderService {
             log.info("Order number: {} placed successfully", savedOrder.getOrderNumber());
             log.info("Order details: {}", savedOrder);
             OrderDto orderResponse = orderMapper.mapTo(savedOrder);
+
+            //send message to kafka topic
+            OrderNotification orderNotification = new OrderNotification(orderResponse.getOrderNumber(), orderDto.getUserDetails().getEmail());
+            log.info("Sending -> orderNotification: {} to Kafka topic: order-notification", orderNotification);
+            kafkaTemplate.send("order-notification", orderNotification);
+            log.info("Sent -> orderNotification: {} to Kafka topic order-notification", orderNotification);
             return orderResponse;
+
         } else {
             log.warn("Product with SKU code {} is not in stock.", order.getSku());
             throw new RuntimeException("Product with sku code " + order.getSku() + " not in stock.");
