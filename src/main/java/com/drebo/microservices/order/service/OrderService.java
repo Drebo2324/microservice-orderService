@@ -4,7 +4,7 @@ import com.drebo.microservices.order.client.InventoryClient;
 import com.drebo.microservices.order.domain.dto.OrderDto;
 import com.drebo.microservices.order.domain.dto.OrderListDto;
 import com.drebo.microservices.order.domain.entity.Order;
-import com.drebo.microservices.order.event.OrderNotification;
+import com.drebo.microservices.order.event.OrderNotificationEvent;
 import com.drebo.microservices.order.mapper.OrderMapper;
 import com.drebo.microservices.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +24,10 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final InventoryClient inventoryClient;
     //KafkaTemplate <k, v> -> <topic name, value sent to topic>
-    private final KafkaTemplate<String, OrderNotification> kafkaTemplate;
+    private final KafkaTemplate<String, OrderNotificationEvent> kafkaTemplate;
 
     public OrderDto placeOrder(OrderDto orderDto) {
         log.info("Received order request: {}", orderDto);
-        log.info("Generating random order number");
         Order order = orderMapper.mapFrom(orderDto);
         order.setOrderNumber(UUID.randomUUID().toString());
         log.info("Converted order DTO: {}", order);
@@ -44,10 +43,12 @@ public class OrderService {
             OrderDto orderResponse = orderMapper.mapTo(savedOrder);
 
             //send message to kafka topic
-            OrderNotification orderNotification = new OrderNotification(orderResponse.getOrderNumber(), orderDto.getUserDetails().getEmail());
-            log.info("Sending -> orderNotification: {} to Kafka topic: order-notification", orderNotification);
-            kafkaTemplate.send("order-notification", orderNotification);
-            log.info("Sent -> orderNotification: {} to Kafka topic order-notification", orderNotification);
+            OrderNotificationEvent orderNotificationEvent = new OrderNotificationEvent();
+            orderNotificationEvent.setOrderNumber(orderResponse.getOrderNumber());
+            orderNotificationEvent.setEmail(orderResponse.getUserDetails().getEmail());
+            log.info("Sending -> orderNotification: {} to Kafka topic: order-notification", orderNotificationEvent);
+            kafkaTemplate.send("order-notification", orderNotificationEvent);
+            log.info("Sent -> orderNotification: {} to Kafka topic order-notification", orderNotificationEvent);
             return orderResponse;
 
         } else {
