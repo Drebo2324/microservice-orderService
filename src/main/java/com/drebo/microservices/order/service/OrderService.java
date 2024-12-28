@@ -41,11 +41,12 @@ public class OrderService {
             log.info("Order number: {} placed successfully", savedOrder.getOrderNumber());
             log.info("Order details: {}", savedOrder);
             OrderDto orderResponse = orderMapper.mapTo(savedOrder);
+            log.info("Order response: {}", orderResponse);
 
             //send message to kafka topic
             OrderNotificationEvent orderNotificationEvent = new OrderNotificationEvent();
             orderNotificationEvent.setOrderNumber(orderResponse.getOrderNumber());
-            orderNotificationEvent.setEmail(orderResponse.getUserDetails().getEmail());
+            orderNotificationEvent.setEmail(orderDto.getUserDetails().getEmail());
             log.info("Sending -> orderNotification: {} to Kafka topic: order-notification", orderNotificationEvent);
             kafkaTemplate.send("order-notification", orderNotificationEvent);
             log.info("Sent -> orderNotification: {} to Kafka topic order-notification", orderNotificationEvent);
