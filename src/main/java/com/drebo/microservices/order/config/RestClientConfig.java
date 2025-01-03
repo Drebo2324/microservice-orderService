@@ -1,6 +1,8 @@
 package com.drebo.microservices.order.config;
 
 import com.drebo.microservices.order.client.InventoryClient;
+import io.micrometer.observation.ObservationRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
@@ -15,11 +17,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import java.time.Duration;
 
 @Slf4j
+@RequiredArgsConstructor
 @Configuration
 public class RestClientConfig {
 
     @Value("${inventory.url}")
     private String inventoryServiceUrl;
+    private final ObservationRegistry observationRegistry;
 
     @Bean
     public InventoryClient inventoryClient(){
@@ -29,6 +33,8 @@ public class RestClientConfig {
                     //RestClient internally uses ClientHttpRequestFactory to handle mechanics of http calls
                     //ClientHttpRequestFactory creates instances of ClientHttpRequest -> http request object that RestClient uses to make http calls
                     .requestFactory(getClientRequestFactory())
+                    //propagate trace id when calling inventory
+                    .observationRegistry(observationRegistry)
                     .build();
 
             var restClientAdapter = RestClientAdapter.create(restClient);
