@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2023.0.3</spring-cloud.version>
+		<dockerPassword>${dockerPassword}</dockerPassword>
 	</properties>
 
 	<!-- confluent.io dependencies wont work without adding repo -->
@@ -204,7 +205,18 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<image>
+						<name>drebo2324/ms-${project.artifactId}</name>
+						<publish>true</publish>
+					</image>
+					<docker>
+						<publishRegistry>
+							<username>drebo2324</username>
+							<password>${dockerPassword}</password>
+						</publishRegistry>
+					</docker>
 				</configuration>
+
 			</plugin>
 			<plugin>
 				<groupId>org.apache.avro</groupId>
